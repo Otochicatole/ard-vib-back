@@ -1,0 +1,42 @@
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+// Dispositivo o nodo IoT instalado en el vivero
+model Device {
+  id           String        @id // Identificador único, ej: "vivero-nodo-01"
+  name         String        // Nombre descriptivo, ej: "Sensor Ambiente Germinación"
+  location     String?       // Ubicación dentro del vivero, ej: "Sector A - Mesa 3"
+  createdAt    DateTime      @default(now())
+  updatedAt    DateTime      @updatedAt
+  measurements Measurement[]
+
+  @@map("devices")
+}
+
+// Mediciones y telemetría reportadas por los dispositivos (Esquema de Tabla Ancha)
+model Measurement {
+  id           String   @id @default(uuid())
+  deviceId     String   @map("device_id")
+  recordedAt   DateTime @default(now()) @map("recorded_at") // Fecha/hora reportada o de recepción
+  temperature  Float?   // Temperatura ambiental en °C
+  humidity     Float?   // Humedad ambiental relativa en %
+  soilMoisture Float?   @map("soil_moisture") // Humedad del sustrato/tierra en %
+  light        Float?   // Intensidad lumínica en Lux o porcentaje
+  co2          Float?   // Concentración de CO2 en ppm
+
+  // Estados de actuadores (relevadores/switches)
+  waterPump    Boolean? @map("water_pump")  // Estado bomba de riego
+  exhaustFan   Boolean? @map("exhaust_fan") // Estado extractor de aire
+  growLight    Boolean? @map("grow_light")  // Estado luz de cultivo
+
+  device       Device   @relation(fields: [deviceId], references: [id], onDelete: Cascade)
+
+  @@index([deviceId, recordedAt])
+  @@map("measurements")
+}
